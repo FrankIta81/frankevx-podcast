@@ -1,0 +1,61 @@
+# Il podcast si aggiorna da solo.
+#
+# Ogni sera guarda se sul canale e' uscito qualcosa di nuovo, ne ricava l'audio,
+# riscrive feed.xml e lo pubblica. Spotify, Apple e gli altri leggono il feed da
+# soli: nessun caricamento a mano.
+#
+# ⚠️ Gli SPECIALI restano fuori da questo giro: il loro video 16:9 sta sulla
+# scrivania di Francesco, non su GitHub. Si aggiungono dal Mac con
+# `node scripts/aggiungi-speciali.mjs && node scripts/genera-feed.mjs`.
+#
+# ⚠️ Qui NON ci sono le credenziali YouTube, ed e' voluto: il repo e' pubblico e
+# le chiavi non ci devono stare. Senza canale titolo e data si prendono da quello
+# che la release porta con se', e non si scarta niente. Il giro con il canale —
+# quello che riconosce le prove e i rifacimenti — si rifa' dal Mac.
+
+name: aggiorna il podcast
+
+on:
+  schedule:
+    - cron: '30 19 * * *'      # 21:30 italiane, a puntata pubblicata da un pezzo
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: podcast
+  cancel-in-progress: false
+
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: raccogli le puntate nuove
+        env:
+          GH_TOKEN: ${{ secrets.PUNTO_EV_MEDIA_TOKEN || github.token }}
+        run: node scripts/raccogli.mjs
+
+      - name: le copertine quadrate degli episodi nuovi
+        run: |
+          pip install --quiet Pillow
+          python3 scripts/copertine.py
+
+      - run: node scripts/genera-feed.mjs
+
+      - name: pubblica, ma solo se e' cambiato qualcosa
+        run: |
+          git config user.name  "FrankIta81"
+          git config user.email "frankevx@gmail.com"
+          git add -A audio copertine episodi feed.xml
+          git diff --cached --quiet && { echo "niente di nuovo"; exit 0; }
+          git commit -m "podcast: episodi nuovi al $(date +%d/%m/%Y)"
+          git push

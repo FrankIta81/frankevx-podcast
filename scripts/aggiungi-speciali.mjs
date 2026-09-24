@@ -2,7 +2,7 @@
 //
 // PERCHE SEPARATO DA raccogli.mjs
 // Gli speciali non stanno su punto-ev-media: stanno in
-// ~/Desktop/FRANKEVX/1 - SPECIALI, una cartella per episodio, e il loro audio
+// ~/Weeicom/FRANKEVX/1 - SPECIALI, una cartella per episodio, e il loro audio
 // si ricava dal video 16:9 gia' montato — che e' gia' a -14 LUFS, cioe' il
 // livello che i podcast vogliono.
 //
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { videoPubblici, abbina } from './lib/youtube.mjs';
 
 const RADICE = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SPECIALI = join(homedir(), 'Desktop', 'FRANKEVX', '1 - SPECIALI');
+const SPECIALI = join(process.env.WEEICOM_HOME || join(homedir(), 'Weeicom'), 'FRANKEVX', '1 - SPECIALI');
 
 const sh = (c, a) => execFileSync(c, a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 
